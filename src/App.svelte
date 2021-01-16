@@ -11,8 +11,12 @@
   let domSpeed = null;
 
   // WebView2 活性時
-  window["OnActive"] = () => {
-    text.focus();
+  window["OnActive"] = async () => {
+    domText.focus();
+
+    // クリップボード読み込み
+    const text = await navigator.clipboard.readText();
+    domText.value = text;
   };
 
   onMount(async () => {
@@ -99,6 +103,26 @@
   };
 </script>
 
+<main>
+  <div>
+    <button class="play" bind:this={domBtn} on:click={_onPlay}> ▶ </button>
+    x<input
+      type="text"
+      style="width:32px;"
+      bind:this={domSpeed}
+      on:change={_onChangeSpeed}
+      value={_SPEED_DEFAULT}
+    />
+  </div>
+  <div class="container">
+    <textarea
+      bind:this={domText}
+      on:input={_onInputText}
+      placeholder="再生するテキスト"
+    />
+  </div>
+</main>
+
 <style>
   .container {
     height: 200px;
@@ -111,21 +135,3 @@
     background-color: cyan;
   }
 </style>
-
-<main>
-  <div>
-    <button class="play" bind:this={domBtn} on:click={_onPlay}> ▶ </button>
-    x<input
-      type="text"
-      style="width:32px;"
-      bind:this={domSpeed}
-      on:change={_onChangeSpeed}
-      value={_SPEED_DEFAULT} />
-  </div>
-  <div class="container">
-    <textarea
-      bind:this={domText}
-      on:input={_onInputText}
-      placeholder="再生するテキスト" />
-  </div>
-</main>

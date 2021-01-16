@@ -35,11 +35,11 @@ var app = (function () {
     function element(name) {
         return document.createElement(name);
     }
-    function text$1(data) {
+    function text(data) {
         return document.createTextNode(data);
     }
     function space() {
-        return text$1(' ');
+        return text(' ');
     }
     function listen(node, event, handler, options) {
         node.addEventListener(event, handler, options);
@@ -744,7 +744,7 @@ var app = (function () {
     			div0 = element("div");
     			button = element("button");
     			button.textContent = "▶";
-    			t1 = text$1("\n    x");
+    			t1 = text("\n    x");
     			input = element("input");
     			t2 = space();
     			div1 = element("div");
@@ -804,8 +804,13 @@ var app = (function () {
     	let domSpeed = null;
 
     	// WebView2 活性時
-    	window["OnActive"] = () => {
-    		text.focus();
+    	window["OnActive"] = async () => {
+    		domText.focus();
+
+    		// クリップボード読み込み
+    		const text = await navigator.clipboard.readText();
+
+    		$$invalidate(1, domText.value = text, domText);
     	};
 
     	onMount(async () => {
