@@ -30,12 +30,13 @@
 
     domBtn.innerText = "⏵";
 
-    requestAnimationFrame(_loop);
+    // ctrl + スペースで再生
+    document.onkeypress = (e) => {
+      if (e?.ctrlKey && e?.key == " ") {
+        _onPlay();
+      }
+    };
   });
-
-  const _loop = () => {
-    requestAnimationFrame(_loop);
-  };
 
   // ボタン押下
   const _onPlay = () => {
