@@ -16,7 +16,10 @@
 
     // クリップボード読み込み
     const text = await navigator.clipboard.readText();
-    domText.value = text;
+    if (text?.length > 0) {
+      domText.value = text;
+      await navigator.clipboard.writeText("");
+    }
   };
 
   onMount(async () => {
@@ -57,7 +60,7 @@
       text = text.replace(/[ -/:-@\[-\`\{-\~]/g, " ");
       // 全角記号も一部読み上げない。
       text = text.replace(
-        /(　|。|、|：|（|）|⇒|？|・|，|＃|＞|＜|＿|\”|’|｜|‘)/g,
+        /(　|。|、|：|（|）|⇒|？|・|，|＃|＞|＜|＿|\”|’|｜|‘|！|…|～)/g,
         " "
       );
 
