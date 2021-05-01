@@ -46,7 +46,6 @@
   const loop = () => {
     // 声が読み込まれるまでループ
     const voices = speechSynthesis.getVoices();
-    console.log(voices.map((e) => e.name));
     if (voices) {
       voiceTarget = voices.filter((e) =>
         e.name.startsWith("Microsoft Haruka")
