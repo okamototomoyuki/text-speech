@@ -31,7 +31,7 @@
     // 再生されてる可能性があるので止める
     speechSynthesis.cancel();
 
-    domBtn.innerText = "⏵";
+    domBtn.innerText = "Play";
 
     // ctrl + スペースで再生
     document.onkeypress = (e) => {
@@ -70,7 +70,7 @@
 
       // 止めて再生ボタン表示
       speechSynthesis.cancel();
-      domBtn.innerText = "⏵";
+      domBtn.innerText = "Play";
     } else {
       // 停止中
 
@@ -96,7 +96,7 @@
       if (voiceTarget) {
         speech.voice = voiceTarget;
       }
-      speech.onstart = () => (domBtn.innerText = "■");
+      speech.onstart = () => (domBtn.innerText = "Stop");
       speech.onboundary = (e) => {
         if (e.name != "word") return;
         domText.focus();
@@ -107,7 +107,7 @@
         domText.scrollTop = offset(domText).top - domText.offsetHeight / 2;
       };
       speech.onend = () => {
-        domBtn.innerText = "⏵";
+        domBtn.innerText = "Play";
       };
 
       speechSynthesis.speak(speech);
@@ -134,7 +134,7 @@
 
 <main>
   <div>
-    <button class="play" bind:this={domBtn} on:click={_onPlay}> ▶ </button>
+    <button class="play" bind:this={domBtn} on:click={_onPlay}>Play</button>
     x<input
       type="text"
       style="width:32px;"
