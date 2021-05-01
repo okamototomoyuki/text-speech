@@ -4,11 +4,13 @@
 
   const _KEY_TEXT = "SPEECH/TEXT";
   const _KEY_SPEED = "SPEECH/SPEED";
-  const _SPEED_DEFAULT = 4;
+  const _SPEED_TARGET = 4;
+  const _SPEED_DEFAULT = 2;
 
   let domBtn = null;
   let domText = null;
   let domSpeed = null;
+  let voiceTarget = null;
 
   // WebView2 活性時
   window["OnActive"] = async () => {
@@ -22,8 +24,6 @@
   onMount(async () => {
     // 前回のテキスト読込
     domText.value = localStorage.getItem(_KEY_TEXT);
-    const speed = localStorage.getItem(_KEY_SPEED);
-    domSpeed.value = isNaN(parseInt(speed)) == false ? speed : _SPEED_DEFAULT;
 
     // 再生されてる可能性があるので止める
     speechSynthesis.cancel();
@@ -36,7 +36,30 @@
         _onPlay();
       }
     };
+
+    requestAnimationFrame(loop);
   });
+
+  const loop = () => {
+    // 声が読み込まれるまでループ
+    const voices = speechSynthesis.getVoices();
+    console.log(voices.map((e) => e.name));
+    if (voices) {
+      voiceTarget = voices.filter((e) =>
+        e.name.startsWith("Microsoft Haruka")
+      )[0];
+      const speed = localStorage.getItem(_KEY_SPEED);
+      if (isNaN(parseInt(speed)) == false) {
+        domSpeed.value = speed;
+      } else if (voiceTarget) {
+        domSpeed.value = _SPEED_TARGET;
+      } else {
+        domSpeed.value = _SPEED_DEFAULT;
+      }
+    } else {
+      requestAnimationFrame(loop);
+    }
+  };
 
   // ボタン押下
   const _onPlay = () => {
@@ -63,11 +86,14 @@
 
       text = text.replace(/[\r|\n]/g, " ");
       // text = text.replace(/\s+/g, " ");
-
       speech.text = text;
       const speed = parseInt(domSpeed.value);
       speech.rate = isNaN(speed) ? 1 : speed;
       speech.lang = "ja-JP";
+      // ※ マイクロソフト製の声じゃないとイベントは場所はとれない
+      if (voiceTarget) {
+        speech.voice = voiceTarget;
+      }
       speech.onstart = () => (domBtn.innerText = "■");
       speech.onboundary = (e) => {
         if (e.name != "word") return;
