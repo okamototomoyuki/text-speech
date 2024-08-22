@@ -16,12 +16,13 @@
   window["OnActive"] = async () => {
     domText.focus();
 
-    // クリップボード読み込み
-    const text = await navigator.clipboard.readText();
-    if (text?.length > 0) {
-      domText.value = text;
-      await navigator.clipboard.writeText("");
-    }
+    // // クリップボード読み込み
+    // ※誤爆するので廃止
+    // const text = await navigator.clipboard.readText();
+    // if (text?.length > 0) {
+    //   domText.value = text;
+    //   await navigator.clipboard.writeText("");
+    // }
   };
 
   onMount(async () => {
@@ -48,7 +49,7 @@
     const voices = speechSynthesis.getVoices();
     if (voices) {
       voiceTarget = voices.filter((e) =>
-        e.name.startsWith("Microsoft Haruka")
+        e.name.startsWith("Microsoft Haruka"),
       )[0];
       const speed = localStorage.getItem(_KEY_SPEED);
       if (isNaN(parseInt(speed)) == false) {
@@ -83,7 +84,7 @@
       // 全角記号も一部読み上げない。
       text = text.replace(
         /(　|。|、|：|（|）|⇒|？|・|，|＃|＞|＜|＿|\”|’|｜|‘|！|…|～)/g,
-        " "
+        " ",
       );
 
       text = text.replace(/[\r|\n]/g, " ");
@@ -100,10 +101,7 @@
       speech.onboundary = (e) => {
         if (e.name != "word") return;
         domText.focus();
-        domText.setSelectionRange(
-          e.charIndex + e.charLength,
-          e.charIndex + e.charLength
-        );
+        domText.setSelectionRange(e.charIndex, e.charIndex + e.charLength);
         domText.scrollTop = offset(domText).top - domText.offsetHeight / 2;
       };
       speech.onend = () => {
