@@ -47,7 +47,7 @@
   const loop = () => {
     // 声が読み込まれるまでループ
     const voices = speechSynthesis.getVoices();
-    if (voices) {
+    if (voices && voices.length > 0) {
       voiceTarget = voices.filter((e) =>
         e.name.startsWith("Microsoft Haruka"),
       )[0];
@@ -133,7 +133,7 @@
 <main>
   <div>
     <button class="play" bind:this={domBtn} on:click={_onPlay}>Play</button>
-    x<input
+    <input
       type="text"
       style="width:32px;"
       bind:this={domSpeed}
