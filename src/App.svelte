@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { offset } from "caret-pos";
 
   const _KEY_TEXT = "SPEECH/TEXT";
@@ -7,14 +7,38 @@
   const _SPEED_TARGET = 4;
   const _SPEED_DEFAULT = 2;
 
-  let domBtn: HTMLButtonElement;
   let domText: HTMLTextAreaElement;
   let domSpeed: HTMLInputElement;
   let voiceTarget: SpeechSynthesisVoice | undefined;
 
+  // Esc 押下中かどうか
+  let escHeld = false;
+
   // WebView2 活性時（既存仕様を維持）
   (window as any).OnActive = async () => {
     domText.focus();
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // Esc 押している間だけ再生
+    if (e.key === "Escape") {
+      // キーリピートで何度も走らないようにする
+      if (!escHeld) {
+        escHeld = true;
+        e.preventDefault();
+        startSpeechFromCaret();
+      }
+    }
+  };
+
+  const handleKeyUp = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      escHeld = false;
+      // キーを離したら停止
+      if (speechSynthesis.speaking || speechSynthesis.paused) {
+        speechSynthesis.cancel();
+      }
+    }
   };
 
   onMount(() => {
@@ -24,20 +48,20 @@
     // 再生されてる可能性があるので止める
     speechSynthesis.cancel();
 
-    domBtn.innerText = "Play";
-
-    // ctrl + S で再生
-    document.onkeypress = (e: KeyboardEvent) => {
-      if (e?.ctrlKey && e?.code === "KeyS") {
-        _onPlay();
-      }
-    };
+    // キーイベント登録
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
 
     requestAnimationFrame(loop);
   });
 
+  onDestroy(() => {
+    document.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("keyup", handleKeyUp);
+  });
+
   const loop = () => {
-    // 声が読み込まれるまでループ
+    // 声取得
     const voices = speechSynthesis.getVoices();
     voiceTarget = voices.find((v) => v.name.startsWith("Microsoft Haruka"));
 
@@ -53,37 +77,25 @@
     }
   };
 
-  // ボタン押下
-  const _onPlay = () => {
-    if (speechSynthesis.speaking) {
-      // 再生中 → 止めて再生ボタン表示
-      speechSynthesis.cancel();
-      domBtn.innerText = "Play";
-      return;
-    }
-
-    // 停止中 → 再生開始
+  // Esc 押下で呼ばれる：カーソル位置から再生開始
+  const startSpeechFromCaret = () => {
     const fullText = domText.value ?? "";
     if (fullText.length === 0) return;
 
-    // ▼ 選択位置（またはキャレット位置）から再開
+    // カーソル（または選択開始位置）を基準にする
     let baseIndex = 0;
-
-    // selectionStart / selectionEnd が取れる場合は位置を使う
     const selStart = domText.selectionStart;
     const selEnd = domText.selectionEnd;
 
     if (
       selStart != null &&
       selEnd != null &&
-      // 一度でもカーソルや選択を動かしていれば 0 以外になる
       (selStart !== 0 || selEnd !== 0)
     ) {
       baseIndex = Math.min(selStart, selEnd);
       if (baseIndex < 0) baseIndex = 0;
       if (baseIndex > fullText.length) baseIndex = fullText.length;
     }
-    // ▲
 
     const speech = new SpeechSynthesisUtterance();
 
@@ -105,24 +117,17 @@
     speech.rate = Number.isNaN(speedVal) ? 1 : speedVal;
     speech.lang = "ja-JP";
 
-    // ※ マイクロソフト製の声じゃないとイベントは場所はとれない
     if (voiceTarget) {
       speech.voice = voiceTarget;
     }
 
-    speech.onstart = () => {
-      if (domBtn) domBtn.innerText = "Stop";
-    };
-
     speech.onboundary = (ev: SpeechSynthesisEvent) => {
       if (ev.name !== "word") return;
 
-      // TypeScript の定義には charLength が無いので any 経由で取得
       const anyEv = ev as any;
       const charLength: number =
         typeof anyEv.charLength === "number" ? anyEv.charLength : 1;
 
-      // ev.charIndex は「読み上げテキストの先頭」からのオフセット
       const start = baseIndex + ev.charIndex;
       const end = start + charLength;
 
@@ -134,9 +139,18 @@
     };
 
     speech.onend = () => {
-      if (domBtn) domBtn.innerText = "Play";
+      // Esc を離す前に読み終わったときも、一応状態をリセットしておく
+      escHeld = false;
     };
 
+    speech.onerror = () => {
+      escHeld = false;
+    };
+
+    // すでに何か読んでいた場合はキャンセルしてから開始
+    if (speechSynthesis.speaking || speechSynthesis.paused) {
+      speechSynthesis.cancel();
+    }
     speechSynthesis.speak(speech);
   };
 
@@ -160,8 +174,7 @@
 
 <main>
   <div class="top-bar">
-    <button class="play" bind:this={domBtn} on:click={_onPlay}>Play</button>
-    x
+    speed x
     <input
       type="text"
       class="speed-input"
@@ -169,6 +182,7 @@
       on:change={_onChangeSpeed}
       value={_SPEED_DEFAULT}
     />
+    <span class="hint">Esc 押しっぱなしで再生</span>
   </div>
   <div class="container">
     <textarea
@@ -199,10 +213,18 @@
 
   .top-bar {
     padding: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .speed-input {
     width: 32px;
+  }
+
+  .hint {
+    opacity: 0.6;
   }
 
   .container {
@@ -214,8 +236,8 @@
     height: 100%;
     box-sizing: border-box;
     margin: 0;
-    border: 1px solid #ccc; /* いらなければ消してOK */
-    resize: none; /* ★ 右下の引き延ばしハンドルを無効化 */
+    border: 1px solid #ccc;
+    resize: none; /* 右下の引き延ばしハンドルを無効化 */
   }
 
   textarea::selection {
