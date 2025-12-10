@@ -7,19 +7,17 @@
   const _SPEED_TARGET = 4;
   const _SPEED_DEFAULT = 2;
 
-  let domBtn: HTMLButtonElement | null = null;
-  let domText: HTMLTextAreaElement | null = null;
-  let domSpeed: HTMLInputElement | null = null;
-  let voiceTarget: SpeechSynthesisVoice | null = null;
+  let domBtn: HTMLButtonElement;
+  let domText: HTMLTextAreaElement;
+  let domSpeed: HTMLInputElement;
+  let voiceTarget: SpeechSynthesisVoice | undefined;
 
   // WebView2 活性時（既存仕様を維持）
   (window as any).OnActive = async () => {
-    domText?.focus();
+    domText.focus();
   };
 
   onMount(() => {
-    if (!domText || !domBtn || !domSpeed) return;
-
     // 前回のテキスト読込
     domText.value = localStorage.getItem(_KEY_TEXT) ?? "";
 
@@ -39,20 +37,9 @@
   });
 
   const loop = () => {
-    if (!domSpeed) {
-      requestAnimationFrame(loop);
-      return;
-    }
-
     // 声が読み込まれるまでループ
     const voices = speechSynthesis.getVoices();
-    if (!voices || voices.length === 0) {
-      requestAnimationFrame(loop);
-      return;
-    }
-
-    voiceTarget =
-      voices.find((v) => v.name.startsWith("Microsoft Haruka")) ?? null;
+    voiceTarget = voices.find((v) => v.name.startsWith("Microsoft Haruka"));
 
     const speedStr = localStorage.getItem(_KEY_SPEED);
     const speed = speedStr != null ? parseInt(speedStr, 10) : NaN;
@@ -68,8 +55,6 @@
 
   // ボタン押下
   const _onPlay = () => {
-    if (!domBtn || !domText || !domSpeed) return;
-
     if (speechSynthesis.speaking) {
       // 再生中 → 止めて再生ボタン表示
       speechSynthesis.cancel();
@@ -82,11 +67,22 @@
     if (fullText.length === 0) return;
 
     // ▼ 選択位置（またはキャレット位置）から再開
-    let selStart = domText.selectionStart ?? 0;
-    let selEnd = domText.selectionEnd ?? selStart;
-    let baseIndex = Math.min(selStart, selEnd);
-    if (baseIndex < 0) baseIndex = 0;
-    if (baseIndex > fullText.length) baseIndex = fullText.length;
+    let baseIndex = 0;
+
+    // selectionStart / selectionEnd が取れる場合は位置を使う
+    const selStart = domText.selectionStart;
+    const selEnd = domText.selectionEnd;
+
+    if (
+      selStart != null &&
+      selEnd != null &&
+      // 一度でもカーソルや選択を動かしていれば 0 以外になる
+      (selStart !== 0 || selEnd !== 0)
+    ) {
+      baseIndex = Math.min(selStart, selEnd);
+      if (baseIndex < 0) baseIndex = 0;
+      if (baseIndex > fullText.length) baseIndex = fullText.length;
+    }
     // ▲
 
     const speech = new SpeechSynthesisUtterance();
@@ -119,7 +115,7 @@
     };
 
     speech.onboundary = (ev: SpeechSynthesisEvent) => {
-      if (ev.name !== "word" || !domText) return;
+      if (ev.name !== "word") return;
 
       // TypeScript の定義には charLength が無いので any 経由で取得
       const anyEv = ev as any;
@@ -148,7 +144,6 @@
    * 文章変更時
    */
   const _onInputText = () => {
-    if (!domText) return;
     localStorage.setItem(_KEY_TEXT, domText.value);
   };
 
@@ -156,7 +151,6 @@
    * スピード変更時
    */
   const _onChangeSpeed = () => {
-    if (!domSpeed) return;
     const speed = parseInt(domSpeed.value, 10);
     if (!Number.isNaN(speed)) {
       localStorage.setItem(_KEY_SPEED, domSpeed.value);
@@ -164,26 +158,6 @@
   };
 </script>
 
-<main>
-  <div>
-    <button class="play" bind:this={domBtn} on:click={_onPlay}>Play</button>
-    x
-    <input
-      type="text"
-      style="width:32px;"
-      bind:this={domSpeed}
-      on:change={_onChangeSpeed}
-      value={_SPEED_DEFAULT}
-    />
-  </div>
-  <div class="container">
-    <textarea
-      bind:this={domText}
-      on:input={_onInputText}
-      placeholder="再生するテキスト"
-    />
-  </div>
-</main>
 <main>
   <div class="top-bar">
     <button class="play" bind:this={domBtn} on:click={_onPlay}>Play</button>
