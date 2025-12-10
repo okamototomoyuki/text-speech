@@ -184,15 +184,66 @@
     />
   </div>
 </main>
+<main>
+  <div class="top-bar">
+    <button class="play" bind:this={domBtn} on:click={_onPlay}>Play</button>
+    x
+    <input
+      type="text"
+      class="speed-input"
+      bind:this={domSpeed}
+      on:change={_onChangeSpeed}
+      value={_SPEED_DEFAULT}
+    />
+  </div>
+  <div class="container">
+    <textarea
+      bind:this={domText}
+      on:input={_onInputText}
+      placeholder="再生するテキスト"
+    ></textarea>
+  </div>
+</main>
 
 <style>
-  .container {
-    height: 200px;
+  :global(html, body) {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
   }
+
+  :global(body) {
+    box-sizing: border-box;
+  }
+
+  main {
+    height: 100vh; /* ウインドウの縦いっぱい */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .top-bar {
+    padding: 4px;
+  }
+
+  .speed-input {
+    width: 32px;
+  }
+
+  .container {
+    flex: 1; /* 残りを全部テキストエリアに */
+  }
+
   textarea {
     width: 100%;
     height: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    border: 1px solid #ccc; /* いらなければ消してOK */
+    resize: none; /* ★ 右下の引き延ばしハンドルを無効化 */
   }
+
   textarea::selection {
     background-color: cyan;
   }
