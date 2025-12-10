@@ -16,4 +16,4 @@ static/global.css
 #docs/bundle.*
 docs/components.*
 docs/utils.*
-yarn.lock
+# yarn.lock
